@@ -46,8 +46,7 @@ def load_data():
                     [('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])])
                 updated_transactions.append(updated_transaction)
             open_transactions = updated_transactions
-    except IOError:
-        print("File Not Found!")
+    except (IOError, IndexError):
         # Our starting blockchain
         genesis_block = Block(0, '', [], 100, 0)
         # Initializing our empty blockchain list
@@ -65,7 +64,8 @@ load_data()
 def save_data():
     try:
         with open('blockchain.txt', mode='w') as f:
-            f.write(json.dumps(blockchain))
+            saveable_chain = [block.__dict__ for block in blockchain]
+            f.write(json.dumps(saveable_chain))
             f.write('\n')
             f.write(json.dumps(open_transactions))
 
@@ -116,13 +116,14 @@ def get_balance(participant):
                       for tx in open_transactions if tx['sender'] == participant]
 
     tx_sender.append(open_tx_sender)
-    amount_sent = reduce(lambda tx_sum, tx_amt: tx_sum +
-                         tx_amt[0] if len(tx_amt) > 0 else 0, tx_sender, 0)
+    print(tx_sender)
+    amount_sent = reduce(lambda tx_sum, tx_amt: tx_sum + sum(tx_amt)
+                         if len(tx_amt) > 0 else tx_sum + 0, tx_sender, 0)
 
     tx_recipient = [[tx['amount'] for tx in block.transactions
                      if tx['recipient'] == participant] for block in blockchain]
-    amount_received = reduce(lambda tx_sum, tx_amt: tx_sum +
-                             tx_amt[0] if len(tx_amt) > 0 else 0, tx_recipient, 0)
+    amount_received = reduce(lambda tx_sum, tx_amt: tx_sum + sum(tx_amt)
+                             if len(tx_amt) > 0 else tx_sum + 0, tx_recipient, 0)
     # Return the total balance
     return amount_received - amount_sent
 

@@ -14,7 +14,7 @@ MINING_REWARD = 10
 
 
 class Blockchain:
-    def __init__(self):
+    def __init__(self, hosting_node_id):
         # Our starting blockchain
         genesis_block = Block(0, '', [], 100, 0)
         # Initializing our (empty) blockchain list
@@ -22,6 +22,7 @@ class Blockchain:
         # Unhandled transactions
         self.open_transactions = []
         self.load_data()
+        self.hosting_node = hosting_node_id
 
     def load_data(self):
         try:
@@ -33,6 +34,7 @@ class Blockchain:
                 # open_transactions = file_content['ot']
 
                 blockchain = json.loads(file_content[0][:-1])
+                # We need to convert  the loaded data because Transactions should use OrderedDict
                 updated_blockchain = []
                 for block in blockchain:
                     converted_tx = [Transaction(
@@ -43,16 +45,15 @@ class Blockchain:
                 self.chain = updated_blockchain
 
                 open_transactions = json.loads(file_content[1])
+                # We need to convert  the loaded data because Transactions should use OrderedDict
                 updated_transactions = []
                 for tx in open_transactions:
                     updated_transaction = Transaction(
                         tx['sender'], tx['recipient'], tx['amount'])
                     updated_transactions.append(updated_transaction)
                 self.open_transactions = updated_transactions
-
         except (IOError, IndexError):
             pass
-
         finally:
             print("Cleanup!")
 
@@ -60,7 +61,7 @@ class Blockchain:
         try:
             with open('blockchain.txt', mode='w') as f:
                 saveable_chain = [block.__dict__ for block in [Block(block_el.index, block_el.previous_hash, [
-                    tx.__dict__ for tx in block_el.transactions], block_el.proof, block_el.timestamp) for block_el in self.blockchain]]
+                    tx.__dict__ for tx in block_el.transactions], block_el.proof, block_el.timestamp) for block_el in self.chain]]
                 f.write(json.dumps(saveable_chain))
                 f.write('\n')
                 saveable_tx = [tx.__dict__ for tx in self.open_transactions]
@@ -86,7 +87,10 @@ class Blockchain:
             proof += 1
         return proof
 
-    def get_balance(self, participant):
+    def get_balance(self):
+
+        participant = self.hosting_node
+
         tx_sender = [[tx.amount for tx in block.transactions
                       if tx.sender == participant] for block in self.chain]
         open_tx_sender = [tx.amount
@@ -135,14 +139,17 @@ class Blockchain:
             return True
         return False
 
-    def mine_block(self, node):
+    def mine_block(self):
         last_block = self.chain[-1]
         hashed_block = hash_block(last_block)
         proof = self.proof_of_work()
-        reward_transaction = Transaction('MINING', node, MINING_REWARD)
+        reward_transaction = Transaction(
+            'MINING', self.hosting_node, MINING_REWARD)
         copied_transactions = self.open_transactions[:]
         copied_transactions.append(reward_transaction)
         block = Block(len(self.chain), hashed_block,
                       copied_transactions, proof)
         self.chain.append(block)
+        self.open_transactions = []
+        self.save_data()
         return True

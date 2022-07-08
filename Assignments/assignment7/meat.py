@@ -9,10 +9,8 @@ class Meat(Food):
         print('The', self.name, 'has been cooked medium rare')
 
 
-m = Meat('steak')
+chicken = Meat('chicken', 'meat')
 
-m.cook()
+chicken.cook()
 
-m2 = Meat('chicken')
-
-m2.cook()
+print(chicken)

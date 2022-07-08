@@ -9,6 +9,8 @@ class Fruit(Food):
         print('The', self.name, 'has been cleaned with water')
 
 
-f = Fruit('apple')
+apple = Fruit('apple', 'fruit')
 
-f.clean()
+apple.clean()
+
+print(apple)

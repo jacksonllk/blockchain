@@ -1,5 +1,5 @@
 from uuid import uuid4
-from verification import Verification
+from utility.verification import Verification
 from blockchain import Blockchain
 
 

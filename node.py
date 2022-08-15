@@ -17,6 +17,7 @@ def get_node_ui():
 def get_network_ui():
     return send_from_directory('ui', 'network.html')
 
+
 @app.route('/wallet', methods=['POST'])
 def create_keys():
     wallet.create_keys()
@@ -57,7 +58,7 @@ def load_keys():
 @app.route('/balance', methods=['GET'])
 def get_balance():
     balance = blockchain.get_balance()
-    if balance != None:
+    if balance is not None:
         response = {
             'message': 'Fetched funds successfully',
             'funds': balance
@@ -67,7 +68,7 @@ def get_balance():
     else:
         response = {
             'message': 'Loading balance failed',
-            'wallet_set_up': wallet.public_key != None
+            'wallet_set_up': wallet.public_key is not None
         }
         return jsonify(response), 500
 
@@ -88,7 +89,12 @@ def broadcast_transaction():
         }
         return jsonify(response), 400
 
-    success = blockchain.add_transaction(values['recipient'], values['sender'], values['signature'], values['amount'], is_receiving=True)
+    success = blockchain.add_transaction(
+        values['recipient'],
+        values['sender'],
+        values['signature'],
+        values['amount'],
+        is_receiving=True)
     if success:
         response = {
             'message': 'Successfully added a transaction',
@@ -130,16 +136,19 @@ def broadcast_block():
             return jsonify(response), 409
 
     elif block['index'] > blockchain.chain[-1].index:
-        response = {'message': 'Blockchain seems to differ from local blockchain'}
+        response = {
+            'message': 'Blockchain seems to differ from local blockchain'}
         blockchain.resolve_conflicts = True
         return jsonify(response), 200
     else:
-        response = {'message': 'Blockchain seems to be shorter. Block not added'}
+        response = {
+            'message': 'Blockchain seems to be shorter. Block not added'}
         return jsonify(response), 409
- 
+
+
 @app.route('/transaction', methods=['POST'])
 def add_transaction():
-    if wallet.public_key == None:
+    if wallet.public_key is None:
         response = {
             'message': 'No wallet set up'
         }
@@ -189,7 +198,7 @@ def mine():
         response = {'message': 'Resolve conflicts first, block not added!'}
         return jsonify(response), 409
     block = blockchain.mine_block()
-    if block != None:
+    if block is not None:
         dict_block = block.__dict__.copy()
         dict_block['transactions'] = [
             tx.__dict__ for tx in dict_block['transactions']]
@@ -202,7 +211,7 @@ def mine():
     else:
         response = {
             'message': 'Adding a block failed',
-            'wallet_set_up': wallet.public_key != None
+            'wallet_set_up': wallet.public_key is not None
         }
         return jsonify(response), 500
 
@@ -234,7 +243,7 @@ def get_chain():
     return jsonify(dict_chain), 200
 
 
-@app.route('/node', methods =['POST'])
+@app.route('/node', methods=['POST'])
 def add_node():
     values = request.get_json()
     if not values:
@@ -258,7 +267,7 @@ def add_node():
 
 @app.route('/node/<node_url>', methods=['DELETE'])
 def remove_node(node_url):
-    if node_url == '' or node_url == None:
+    if node_url is '' or node_url is None:
         response = {
             'message': 'No node found.'
         }
@@ -289,4 +298,3 @@ if __name__ == '__main__':
     wallet = Wallet(port)
     blockchain = Blockchain(wallet.public_key, port)
     app.run(host='0.0.0.0', port=port)
-
